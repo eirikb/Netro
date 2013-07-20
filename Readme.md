@@ -2,7 +2,7 @@
 
 
 Reverse tunneling in Windows.  
-I usually fire up ´ssh -R´ when I need some reverse tunneling, on any platform.
+I usually fire up `ssh -R` when I need some reverse tunneling, on any platform.
 But sometimes I have to tunnel from Windows to Windows, and this is a bit more difficult, as I usually don't have sshd running on Windows servers.  
 Netro, a bad play on "Metro" is here to help me and others that must do some quick, dirty and simple tunneling on Windows.
 
@@ -31,7 +31,7 @@ Figure:
  
  ### Tunneling types
  
- ´Netro.exe 5000 localhost:80´  
+ `Netro.exe 5000 localhost:80`  
  Listen on port 5000, send connections/data to localhost on port 80.
  No reverse tunneling involved.
  
@@ -41,7 +41,7 @@ Figure:
         └─────┘
 
 
-´Netro.exe 5000 5001´  
+`Netro.exe 5000 5001`  
 Listen on port 5000 for normal connections. Listen on port 5001 for reverse tunneling connection.
 
 
@@ -52,7 +52,7 @@ Listen on port 5000 for normal connections. Listen on port 5001 for reverse tunn
         └─────┘
 
 
-´Netro.exe example.com:5001 localhost:80´  
+`Netro.exe example.com:5001 localhost:80`  
 Open reverse tunneling cunnection against example.com on port 5001.
 On reverse connections, open connection against localhost on port 80.
 
