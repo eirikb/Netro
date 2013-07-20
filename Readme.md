@@ -29,7 +29,7 @@ Figure:
                         ┆
 
  
- ### Tunneling types
+### Tunneling types
  
  `Netro.exe 5000 localhost:80`  
  Listen on port 5000, send connections/data to localhost on port 80.
