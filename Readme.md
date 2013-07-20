@@ -1,7 +1,11 @@
 ﻿## Netro
 
 
-Reverse tunneling in Windows.  
+Reverse tunneling in Windows. 
+
+Try it out: http://eirikb.github.io/Netro/1.0.0/Netro.exe  
+Warning: Executable, use at your own risk!
+
 I usually fire up `ssh -R` when I need some reverse tunneling, on any platform.
 But sometimes I have to tunnel from Windows to Windows, and this is a bit more difficult, as I usually don't have sshd running on Windows servers.  
 Netro, a bad play on "Metro" is here to help me and others that must do some quick, dirty and simple tunneling on Windows.
