@@ -61,7 +61,7 @@ Open reverse tunneling cunnection against example.com on port 5001.
 On reverse connections, open connection against localhost on port 80.
 
 
-       u
+       O
        │
     ┌──┴──┐
     │     ├───O
