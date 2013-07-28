@@ -33,6 +33,8 @@ namespace Netro
             Stream = new NetworkStream(_socket);
         }
 
+        public object Port { get; private set; }
+
         public virtual void Connect(Action<AsyncSocket> callback)
         {
             _callbackConnect.Add(callback);
@@ -97,6 +99,7 @@ namespace Netro
 
         public virtual void Listen(int port)
         {
+            Port = port;
             _socket.Bind(new IPEndPoint(0, port));
             _socket.Listen(int.MaxValue);
             BeginAccept();

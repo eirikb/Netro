@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace Netro
 {
@@ -10,6 +11,7 @@ namespace Netro
 
             var hasListen = false;
             var hasClient = false;
+
             args.ToList().ForEach(arg =>
                 {
                     int port;
@@ -34,9 +36,15 @@ namespace Netro
                     hasListen = true;
                 });
 
-            while (true)
+            if (!netro.Ready)
             {
+                Console.WriteLine("Netro not running, missing arguments?");
+                Console.WriteLine("Check https://github.com/eirikb/Netro for usage examples");
+                return;
             }
+
+            Console.Read();
+            Output.Instance.Reset();
         }
     }
 }

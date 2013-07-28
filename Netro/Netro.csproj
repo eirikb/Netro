@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="AsyncSocket.cs" />
     <Compile Include="Netro.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReverseAsyncSocket.cs" />
