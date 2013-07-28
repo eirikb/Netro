@@ -1,99 +1,86 @@
-﻿using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Netro
 {
     public class Netro
     {
         private KeyValuePair<string, int> _client;
-        private Socket _reverseServer;
-        private ReverseStream _reverseStream;
-        private Socket _server;
-        private int _threadId;
+        private AsyncSocket _server;
 
-        public Netro()
+        public void ServerToClient(AsyncSocket server, string host, int port, Action<AsyncSocket> callback = null)
         {
-            _threadId = 0;
+            server.Connect(socket =>
+                {
+                    var client = new AsyncSocket();
+                    if (callback != null) client.Connect(callback);
+                    client.Connect(host, port, () => SocketPipe.PipeSockets(socket, client));
+                });
+        }
+
+        public void ReverseServerToServer(ReverseAsyncSocket reverseServer, AsyncSocket server)
+        {
+            var id = 0;
+            reverseServer.Connect(reverseSocket => server.Connect(socket =>
+                {
+                    var tid = id++;
+                    reverseSocket.Read(
+                        (sid, buffer, index, count) => { if (sid == tid) socket.Write(buffer, index, count); });
+                    socket.Read((buffer, count) => reverseSocket.Write(tid, buffer, 0, count));
+                }));
+        }
+
+        public void ReverseClientToClient(ReverseAsyncSocket reverseClient, string host, int port)
+        {
+            var clients = new Dictionary<int, AsyncSocket>();
+
+            reverseClient.Read((id, buffer, index, count) =>
+                {
+                    AsyncSocket client;
+                    if (!clients.TryGetValue(id, out client))
+                    {
+                        client = new AsyncSocket();
+                        client.Read((cbuffer, ccount) => reverseClient.Write(id, cbuffer, 0, ccount));
+                        client.Connect(host, port);
+
+                        clients[id] = client;
+
+                        client.Connect(socket => client.Write(buffer, index, count));
+                    }
+                    else
+                    {
+                        client.Write(buffer, index, count);
+                    }
+                });
         }
 
         public void SetClient(string host, int port)
         {
             _client = new KeyValuePair<string, int>(host, port);
-        }
 
-        public void Listen(int listenPort)
-        {
-            _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _server.Bind(new IPEndPoint(0, listenPort));
-            _server.Listen(int.MaxValue);
+            if (_server == null) return;
 
-
-            AsyncListener.AcceptAsync(_server, socket =>
-                {
-                    if (_reverseStream != null) ListenToReverse(socket);
-                    else ListenToClient(socket);
-                });
-        }
-
-        private void ListenToReverse(Socket socket)
-        {
-            var serverStream = new NetworkStream(socket);
-
-            var id = ++_threadId;
-            _reverseStream.ReadAsync((i, bytes) => serverStream.Write(bytes, 0, bytes.Length));
-            AsyncStream.ReadAsync(serverStream, (bytes, i) => _reverseStream.Write(id, bytes, i));
-        }
-
-        private void ListenToClient(Socket socket)
-        {
-            var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            client.Connect(_client.Key, _client.Value);
-            var clientStream = new NetworkStream(client);
-
-            var serverStream = new NetworkStream(socket);
-            AsyncStream.ReadAsync(clientStream, (bytes, i) => serverStream.Write(bytes, 0, i));
-            AsyncStream.ReadAsync(serverStream, (bytes, i) => clientStream.Write(bytes, 0, i));
-        }
-
-        public void ListenReverse(int listenPort)
-        {
-            _reverseServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _reverseServer.Bind(new IPEndPoint(0, listenPort));
-            _reverseServer.Listen(int.MaxValue);
-
-            AsyncListener.AcceptAsync(_reverseServer,
-                                      socket => _reverseStream = new ReverseStream(new NetworkStream(socket)));
+            ServerToClient(_server, host, port);
         }
 
         public void ConnectReverse(string host, int port)
         {
-            var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            client.Connect(host, port);
-            var clientStream = new ReverseStream(new NetworkStream(client));
-
-            var streams = new Dictionary<int, NetworkStream>();
-
-            clientStream.ReadAsync((id, data) =>
-                {
-                    NetworkStream stream;
-                    if (!streams.TryGetValue(id, out stream))
-                    {
-                        var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        socket.Connect(_client.Key, _client.Value);
-                        stream = new NetworkStream(socket);
-                        streams[id] = stream;
-                        AsyncStream.ReadAsync(stream, (bytes, size) => clientStream.Write(id, bytes, size));
-                    }
-
-                    stream.Write(data, 0, data.Length);
-                });
+            var reverseClient = new ReverseAsyncSocket();
+            ReverseClientToClient(reverseClient, _client.Key, _client.Value);
+            reverseClient.Connect(host, port);
         }
 
-        public void Close()
+        public void Listen(int port)
         {
-            if (_server != null) _server.Close();
-            if (_reverseServer != null) _reverseServer.Close();
+            _server = new AsyncSocket();
+            _server.Listen(port);
+        }
+
+        public void ListenReverse(int port)
+        {
+            var reverseServer = new ReverseAsyncSocket();
+            ReverseServerToServer(reverseServer, _server);
+            reverseServer.Listen(port);
         }
     }
 }
