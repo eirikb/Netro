@@ -53,11 +53,18 @@ namespace Netro
         {
             _socket.BeginConnect(host, port, ar =>
                 {
-                    _socket.EndConnect(ar);
-                    Stream = new NetworkStream(_socket);
+                    try
+                    {
+                        _socket.EndConnect(ar);
+                        Stream = new NetworkStream(_socket);
 
-                    if (!_reading) BeginRead();
-                    _callbackConnect.ForEach(callback => callback(this));
+                        if (!_reading) BeginRead();
+                        _callbackConnect.ForEach(callback => callback(this));
+                    }
+                    catch
+                    {
+                        _callbackDisconnect.ForEach(callback => callback());
+                    }
                 }, _socket);
         }
 
@@ -73,11 +80,18 @@ namespace Netro
 
             Stream.BeginRead(buffer, 0, buffer.Length, ar =>
                 {
-                    var read = Stream.EndRead(ar);
-                    if (read == 0) _socket.Disconnect(false);
-                    else _callbackRead.ForEach(callback => callback(buffer, read));
+                    try
+                    {
+                        var read = Stream.EndRead(ar);
+                        if (read == 0) _socket.Disconnect(false);
+                        else _callbackRead.ForEach(callback => callback(buffer, read));
 
-                    BeginRead();
+                        BeginRead();
+                    }
+                    catch
+                    {
+                        _callbackDisconnect.ForEach(callback => callback());
+                    }
                 }, Stream);
         }
 
@@ -98,18 +112,25 @@ namespace Netro
         {
             _socket.BeginAccept(ar =>
                 {
-                    var socket = _socket.EndAccept(ar);
-                    if (!_callbackPreconnect.All(callback => callback()))
+                    try
                     {
-                        socket.Close();
+                        var socket = _socket.EndAccept(ar);
+                        if (!_callbackPreconnect.All(callback => callback()))
+                        {
+                            socket.Close();
+                        }
+                        else
+                        {
+                            var asyncSocket = new AsyncSocket(socket);
+                            _callbackConnect.ForEach(callback => callback(asyncSocket));
+                            asyncSocket.BeginRead();
+                        }
+                        BeginAccept();
                     }
-                    else
+                    catch
                     {
-                        var asyncSocket = new AsyncSocket(socket);
-                        _callbackConnect.ForEach(callback => callback(asyncSocket));
-                        asyncSocket.BeginRead();
+                        _callbackDisconnect.ForEach(callback => callback());
                     }
-                    BeginAccept();
                 }, _socket);
         }
 
