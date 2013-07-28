@@ -3,7 +3,7 @@
 
 Reverse tunneling in Windows. 
 
-Try it out: http://eirikb.github.io/Netro/1.0.0/Netro.exe  
+Try it out: http://eirikb.github.io/Netro/1.0.1/Netro.exe  
 Warning: Executable, use at your own risk!
 
 I usually fire up `ssh -R` when I need some reverse tunneling, on any platform.
