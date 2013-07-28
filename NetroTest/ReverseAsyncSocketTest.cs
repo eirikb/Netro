@@ -17,8 +17,9 @@ namespace NetroTest
 
                     var count = 2;
                     var client = new ReverseAsyncSocket();
+                    client.Read((id, text) => {});
                     client.Disconnect(() => done(--count == 0));
-                    client.Connect("localhost", port, () => client.Disconnect(() => done(--count == 0)));
+                    client.Connect(Host, port, () => client.Disconnect(() => done(--count == 0)));
                 });
         }
 
@@ -36,7 +37,7 @@ namespace NetroTest
                         }));
 
                     var client = new ReverseAsyncSocket();
-                    client.Connect("localhost", port, () => client.Write(7, "Hello"));
+                    client.Connect(Host, port, () => client.Write(7, "Hello"));
                 });
         }
 
@@ -67,7 +68,7 @@ namespace NetroTest
                             client.Write(id, "Hello");
                         });
 
-                    client.Connect("localhost", port, () =>
+                    client.Connect(Host, port, () =>
                         {
                             client.Read((id, text) =>
                                 {
@@ -90,7 +91,11 @@ namespace NetroTest
             Until((port, done) =>
                 {
                     var server = new ReverseAsyncSocket();
-                    server.Listen(port, socket => socket.Disconnect(done));
+                    server.Listen(port, socket =>
+                        {
+                            socket.Disconnect(done);
+                            socket.Read((id, text) => {});
+                        });
 
                     var client = new ReverseAsyncSocket();
                     client.Connect("localhost", port, client.Disconnect);

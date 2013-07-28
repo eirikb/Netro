@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading;
 using NUnit.Framework;
 using Netro;
 using NetroTest.Util;
@@ -14,10 +15,14 @@ namespace NetroTest
             Until((port, done) =>
                 {
                     var server = new AsyncSocket();
-                    server.Listen(port, socket => socket.Disconnect(done));
+                    server.Listen(port, socket =>
+                        {
+                            socket.Disconnect(done);
+                            socket.Read(text => { });
+                        });
 
                     var client = new AsyncSocket();
-                    client.Connect("localhost", port, client.Disconnect);
+                    client.Connect(Host, port, client.Disconnect);
                 });
         }
 
@@ -35,11 +40,12 @@ namespace NetroTest
 
                     var client = new AsyncSocket();
                     client.Disconnect(done);
-                    client.Connect("localhost", port, () => client.Write("Hello, world!"));
+                    client.Connect(Host, port, () => client.Write("Hello, world!"));
+                    client.Read(text => { });
                 });
         }
 
-        [Test, Timeout(10000)]
+        [Test, Timeout(5000)]
         public void TestMassiveDisconnect()
         {
             Until((port, done) =>
@@ -48,18 +54,24 @@ namespace NetroTest
                     var count = 0;
 
                     var server = new AsyncSocket();
-                    server.Listen(port, socket => socket.Disconnect(() => count--));
+                    server.Listen(port, socket =>
+                        {
+                            count++;
+                            socket.Disconnect(() => count--);
+                            socket.Read(text => { });
+                        });
 
                     var clients = Enumerable.Range(0, clientCount).Select(i =>
                         {
                             var client = new AsyncSocket();
-                            client.Connect("localhost", port, () => count++);
+                            client.Connect(Host, port);
                             return client;
                         }).ToList();
 
                     while (count < clientCount)
                     {
                     }
+
                     Assert.AreEqual(clientCount, count);
 
                     clients.ForEach(client => client.Disconnect());
@@ -84,7 +96,7 @@ namespace NetroTest
                         }));
 
                     var client = new AsyncSocket();
-                    client.Connect("localhost", port, () => client.Write("Hello, world!"));
+                    client.Connect(Host, port, () => client.Write("Hello, world!"));
                 });
         }
 
@@ -101,12 +113,13 @@ namespace NetroTest
                         }));
 
                     var client = new AsyncSocket();
+                    client.Connect(Host, port, () => client.Write("Hello"));
+                    Thread.Sleep(500);
                     client.Read(text =>
                         {
                             Assert.AreEqual("World!", text);
                             done();
                         });
-                    client.Connect("localhost", port, () => client.Write("Hello"));
                 });
         }
 
@@ -151,7 +164,26 @@ namespace NetroTest
 
                     var client = new AsyncSocket();
                     client.Disconnect(done);
-                    client.Connect("localhost", port);
+                    client.Connect(Host, port);
+                    client.Read(text => {});
+                });
+        }
+
+        [Test, Timeout(2000)]
+        public void TestServerPongReadAfterConnect()
+        {
+            Until((port, done) =>
+                {
+                    var server = new AsyncSocket();
+                    server.Listen(port, socket => socket.Write("Hello"));
+
+                    var client = new AsyncSocket();
+                    client.Connect(Host, port);
+                    client.Read(text =>
+                        {
+                            Assert.AreEqual("Hello", text);
+                            done();
+                        });
                 });
         }
     }

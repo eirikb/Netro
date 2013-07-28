@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Netro
 {
@@ -7,13 +8,16 @@ namespace Netro
         private readonly AsyncSocket _socket;
         private int _currentId;
         private int _waitingFor;
+        private readonly List<Action<int, byte[], int, int>> _callbackRead;
+        private bool _reading;
 
         public ReverseAsyncSocket()
         {
             _socket = new AsyncSocket();
+            _callbackRead = new List<Action<int, byte[], int, int>>();
         }
 
-        private ReverseAsyncSocket(AsyncSocket socket)
+        private ReverseAsyncSocket(AsyncSocket socket) : this()
         {
             _socket = socket;
         }
@@ -56,6 +60,11 @@ namespace Netro
 
         public void Read(Action<int, byte[], int, int> callback)
         {
+            _callbackRead.Add(callback);
+
+            if (_reading) return;
+            _reading = true;
+
             _socket.Read((buffer, read) =>
                 {
                     var pos = 0;
@@ -71,7 +80,7 @@ namespace Netro
                         var next = read - pos;
                         if (next > _waitingFor) next = _waitingFor;
 
-                        callback(_currentId, buffer, pos, next);
+                        _callbackRead.ForEach(cb => cb(_currentId, buffer, pos, next));
 
                         pos += next;
                         _waitingFor -= next;

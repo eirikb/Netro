@@ -15,7 +15,7 @@ namespace Netro
         private readonly List<Action<byte[], int>> _callbackRead;
         private readonly Socket _socket;
         protected NetworkStream Stream;
-        private Boolean _reading;
+        private bool _connected;
 
         public AsyncSocket()
         {
@@ -24,11 +24,11 @@ namespace Netro
             _callbackConnect = new List<Action<AsyncSocket>>();
             _callbackDisconnect = new List<Action>();
             _callbackRead = new List<Action<byte[], int>>();
-            _reading = false;
         }
 
         private AsyncSocket(Socket socket) : this()
         {
+            _connected = true;
             _socket = socket;
             Stream = new NetworkStream(_socket);
         }
@@ -60,7 +60,8 @@ namespace Netro
                         _socket.EndConnect(ar);
                         Stream = new NetworkStream(_socket);
 
-                        if (!_reading) BeginRead();
+                        _connected = true;
+                        if (_callbackRead.Count > 0) BeginRead();
                         _callbackConnect.ForEach(callback => callback(this));
                     }
                     catch
@@ -72,7 +73,6 @@ namespace Netro
 
         private void BeginRead()
         {
-            _reading = true;
             var buffer = new byte[BufferSize];
             if (!_socket.Connected)
             {
@@ -126,7 +126,7 @@ namespace Netro
                         {
                             var asyncSocket = new AsyncSocket(socket);
                             _callbackConnect.ForEach(callback => callback(asyncSocket));
-                            asyncSocket.BeginRead();
+                            //asyncSocket.BeginRead();
                         }
                         BeginAccept();
                     }
@@ -140,6 +140,7 @@ namespace Netro
         public virtual void Read(Action<byte[], int> callback)
         {
             _callbackRead.Add(callback);
+            if (_connected) BeginRead();
         }
 
         public virtual void Write(byte[] data)
@@ -164,7 +165,7 @@ namespace Netro
 
         public void Disconnect()
         {
-            if (_socket != null) _socket.Disconnect(false);
+            if (_socket != null) _socket.Close();
         }
     }
 }
