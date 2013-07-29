@@ -71,10 +71,7 @@ namespace Netro
 
             if (reverse != null)
             {
-                reverse.Connect(s =>
-                    {
-                        callback(true);
-                    });
+                reverse.Connect(s => callback(true));
                 reverse.Disconnect(() => callback(false));
                 if (reverse.Connected) callback(true);
 
