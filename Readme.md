@@ -5,7 +5,8 @@
 Reverse tunneling in Windows. 
 
 Try it out: http://eirikb.github.io/Netro/1.0.1/Netro.exe  
-Warning: Executable, use at your own risk!
+Warning: Executable, use at your own risk!  
+Netro works perfectly with mono for Linux / OSX.
 
 I usually fire up `ssh -R` when I need some reverse tunneling, on any platform.
 But sometimes I have to tunnel from Windows to Windows, and this is a bit more difficult, as I usually don't have sshd running on Windows servers.  
