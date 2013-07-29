@@ -5,10 +5,10 @@ namespace Netro
 {
     public class Netro
     {
-        private KeyValuePair<string, int> _client;
-        private AsyncSocket _server;
-
-        public bool Ready { get; private set; }
+        internal KeyValuePair<string, int> Client;
+        internal ReverseAsyncSocket ReverseClient;
+        internal ReverseAsyncSocket ReverseServer;
+        internal AsyncSocket Server;
 
         public void ServerToClient(AsyncSocket server, string host, int port, Action<AsyncSocket> callback = null)
         {
@@ -58,46 +58,31 @@ namespace Netro
 
         public void SetClient(string host, int port)
         {
-            _client = new KeyValuePair<string, int>(host, port);
+            Client = new KeyValuePair<string, int>(host, port);
 
-            if (_server == null) return;
+            if (Server == null) return;
 
-            ServerToClient(_server, host, port);
-            Ready = true;
-
-            //Output.Instance.SetType(string.Format("Proxy ({0} -> {1}:{2})", _server.Port, host, port));
+            ServerToClient(Server, host, port);
         }
 
         public void ConnectReverse(string host, int port)
         {
-            Ready = true;
-
-            var reverseClient = new ReverseAsyncSocket();
-            ReverseClientToClient(reverseClient, _client.Key, _client.Value);
-            //Output.Instance.SetReverse(reverseClient);
-
-            reverseClient.Connect(host, port);
-
-            var text = string.Format("Reverse client ({0}:{1} -> {2}:{3})", host, port, _client.Key, _client.Value);
-            //Output.Instance.SetType(text);
+            ReverseClient = new ReverseAsyncSocket();
+            ReverseClientToClient(ReverseClient, Client.Key, Client.Value);
+            ReverseClient.Connect(host, port);
         }
 
         public void Listen(int port)
         {
-            _server = new AsyncSocket();
-            _server.Listen(port);
+            Server = new AsyncSocket();
+            Server.Listen(port);
         }
 
         public void ListenReverse(int port)
         {
-            Ready = true;
-
-            var reverseServer = new ReverseAsyncSocket();
-            ReverseServerToServer(reverseServer, _server);
-            reverseServer.Listen(port);
-            //Output.Instance.SetReverse(reverseServer);
-
-            //Output.Instance.SetType(string.Format("Reverse server ({0} -> {1})", port, _server.Port));
+            ReverseServer = new ReverseAsyncSocket();
+            ReverseServerToServer(ReverseServer, Server);
+            ReverseServer.Listen(port);
         }
     }
 }

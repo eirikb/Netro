@@ -15,7 +15,6 @@ namespace Netro
         private readonly List<Action<byte[], int>> _callbackRead;
         private readonly Socket _socket;
         protected NetworkStream Stream;
-        private bool _connected;
 
         public AsyncSocket()
         {
@@ -28,12 +27,15 @@ namespace Netro
 
         private AsyncSocket(Socket socket) : this()
         {
-            _connected = true;
+            Connected = true;
             _socket = socket;
             Stream = new NetworkStream(_socket);
         }
 
-        public object Port { get; private set; }
+        public int Port { get; private set; }
+        public string Host { get; private set; }
+
+        public bool Connected { get; private set; }
 
         public virtual void Connect(Action<AsyncSocket> callback)
         {
@@ -53,6 +55,9 @@ namespace Netro
 
         public virtual void Connect(string host, int port)
         {
+            Host = host;
+            Port = port;
+
             _socket.BeginConnect(host, port, ar =>
                 {
                     try
@@ -60,7 +65,7 @@ namespace Netro
                         _socket.EndConnect(ar);
                         Stream = new NetworkStream(_socket);
 
-                        _connected = true;
+                        Connected = true;
                         if (_callbackRead.Count > 0) BeginRead();
                         _callbackConnect.ForEach(callback => callback(this));
                     }
@@ -126,7 +131,6 @@ namespace Netro
                         {
                             var asyncSocket = new AsyncSocket(socket);
                             _callbackConnect.ForEach(callback => callback(asyncSocket));
-                            //asyncSocket.BeginRead();
                         }
                         BeginAccept();
                     }
@@ -140,7 +144,7 @@ namespace Netro
         public virtual void Read(Action<byte[], int> callback)
         {
             _callbackRead.Add(callback);
-            if (_connected) BeginRead();
+            if (Connected) BeginRead();
         }
 
         public virtual void Write(byte[] data)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -6,8 +7,6 @@ namespace Netro
 {
     public class Output
     {
-        private static readonly Output OutputInstance = new Output();
-
         private static readonly string[] Logo = new[]
             {
                 @"    _......_    ",
@@ -24,31 +23,33 @@ namespace Netro
                 @" =//========\\="
             };
 
-        static Output()
-        {
-        }
+        private static readonly Dictionary<NetroStatus.Type, string> TypeFormats = new Dictionary
+            <NetroStatus.Type, string>
+            {
+                {NetroStatus.Type.Proxy, "Proxy ({0} -> {1}"},
+                {NetroStatus.Type.ReverseClient, "Reverse client ({0} -> {1})"},
+                {NetroStatus.Type.ReverseServer, "Reverse server ({0} -> {1})"}
+            };
 
-        private Output()
-        {
-        }
+        private readonly NetroStatus _status;
 
-        public static Output Instance
+        public Output(NetroStatus netroStatus)
         {
-            get { return OutputInstance; }
-        }
+            _status = netroStatus;
 
-        public bool Connected
-        {
-            set { SetStatus(value); }
-        }
-
-        public void Init()
-        {
             Console.Clear();
             Console.CursorVisible = false;
             Console.SetCursorPosition(0, 0);
             Console.Write("Loading...");
 
+            DrawLogo();
+            SetConnectedStatus(false);
+            SetType();
+            _status.OnConnect(SetConnectedStatus);
+        }
+
+        private static void DrawLogo()
+        {
             var x = Console.WindowWidth - Logo.First().Length - 1;
             var y = 1;
             Console.ForegroundColor = ConsoleColor.White;
@@ -62,7 +63,7 @@ namespace Netro
             Console.Write(" Netro {0}", Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
         }
 
-        public void ClearRect(int x, int y, int width, int height)
+        private static void ClearRect(int x, int y, int width, int height)
         {
             Console.ResetColor();
             Console.CursorSize = height;
@@ -71,17 +72,17 @@ namespace Netro
             Console.CursorSize = 1;
         }
 
-        public void SetType(string type)
+        public void SetType()
         {
+            var type = string.Format(TypeFormats[_status.CurrentType], _status.From, _status.To);
             ClearRect(0, 0, Console.WindowWidth, 1);
-            SetStatus(false);
 
             Console.ResetColor();
             Console.SetCursorPosition(1, 3);
             Console.WriteLine("Type: {0}", type);
         }
 
-        public void SetStatus(bool connected)
+        public void SetConnectedStatus(bool connected)
         {
             ClearRect(1, 1, 10, 1);
             Console.SetCursorPosition(1, 1);
@@ -89,22 +90,6 @@ namespace Netro
             Console.ForegroundColor = ConsoleColor.Black;
             var text = connected ? "CONNECTED" : "WAITING";
             Console.WriteLine(text);
-        }
-
-        public void SetReverse(ReverseAsyncSocket reverse)
-        {
-            var disconnect = new Action(() =>
-                {
-                    Reset();
-                    Console.WriteLine("No connection to reverse");
-                    Environment.Exit(0);
-                });
-            reverse.Connect(socket =>
-                {
-                    Connected = true;
-                    socket.Disconnect(disconnect);
-                });
-            reverse.Disconnect(disconnect);
         }
 
         public void Reset()

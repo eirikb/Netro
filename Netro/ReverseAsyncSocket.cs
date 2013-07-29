@@ -5,21 +5,38 @@ namespace Netro
 {
     public class ReverseAsyncSocket
     {
+        private readonly List<Action<ReverseAsyncSocket>> _callbackConnect;
+        private readonly List<Action<int, byte[], int, int>> _callbackRead;
         private readonly AsyncSocket _socket;
         private int _currentId;
-        private int _waitingFor;
-        private readonly List<Action<int, byte[], int, int>> _callbackRead;
         private bool _reading;
+        private int _waitingFor;
 
         public ReverseAsyncSocket()
         {
             _socket = new AsyncSocket();
             _callbackRead = new List<Action<int, byte[], int, int>>();
+            _callbackConnect = new List<Action<ReverseAsyncSocket>>();
         }
 
         private ReverseAsyncSocket(AsyncSocket socket) : this()
         {
             _socket = socket;
+        }
+
+        public bool Connected
+        {
+            get { return _socket.Connected; }
+        }
+
+        public int Port
+        {
+            get { return _socket.Port; }
+        }
+
+        public string Host
+        {
+            get { return _socket.Host; }
         }
 
         public void Listen(int port)
@@ -35,7 +52,14 @@ namespace Netro
 
         public void Connect(Action<ReverseAsyncSocket> callback)
         {
-            _socket.Connect(socket => callback(new ReverseAsyncSocket(socket)));
+            _callbackConnect.Add(callback);
+            if (_callbackConnect.Count > 1) return;
+
+            _socket.Connect(socket =>
+                {
+                    var reverseSocket = new ReverseAsyncSocket(socket);
+                    _callbackConnect.ForEach(cb => cb(reverseSocket));
+                });
         }
 
         public void Connect(string host, int port)

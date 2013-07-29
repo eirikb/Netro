@@ -36,15 +36,19 @@ namespace Netro
                     hasListen = true;
                 });
 
-            if (!netro.Ready)
+
+            var netroStatus = new NetroStatus(netro);
+
+            if (netroStatus.CurrentType == NetroStatus.Type.None)
             {
                 Console.WriteLine("Netro not running, missing arguments?");
                 Console.WriteLine("Check https://github.com/eirikb/Netro for usage examples");
                 return;
             }
 
+            var output = new Output(netroStatus);
             Console.Read();
-            Output.Instance.Reset();
+            output.Reset();
         }
     }
 }
