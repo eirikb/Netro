@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using NUnit.Framework;
 
 namespace NetroTest.Util
@@ -18,18 +19,14 @@ namespace NetroTest.Util
         {
             var doRun = true;
             run(_port, () => doRun = false);
-            while (doRun)
-            {
-            }
+            while (doRun) Thread.Sleep(100);
         }
 
         public void Until(Action<int, Action<bool>> run)
         {
-            var doRun = true;
-            run(_port, done => doRun = done);
-            while (doRun)
-            {
-            }
+            var complete = false;
+            run(_port, done => complete = done);
+            while (!complete) Thread.Sleep(100);
         }
     }
 }

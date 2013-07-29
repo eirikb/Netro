@@ -132,7 +132,11 @@ namespace NetroTest
 
                     testServer.Listen(portTestServer, socket => socket.Disconnect());
 
-                    client.Connect(Host, portServer, () => client.Disconnect(done));
+                    client.Connect(Host, portServer, () =>
+                        {
+                            client.Read(text => {});
+                            client.Disconnect(done);
+                        });
                 });
         }
     }

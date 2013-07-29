@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using NUnit.Framework;
 using Netro;
@@ -9,7 +10,7 @@ namespace NetroTest
     [TestFixture]
     public class AsyncSocketTest : AsyncTest
     {
-        [Test, Timeout(2000)]
+        [Test, Timeout(2000000)]
         public void TestClientDisconnect()
         {
             Until((port, done) =>
@@ -68,16 +69,13 @@ namespace NetroTest
                             return client;
                         }).ToList();
 
-                    while (count < clientCount)
-                    {
-                    }
+                    while (count < clientCount) Thread.Sleep(100);
 
                     Assert.AreEqual(clientCount, count);
 
                     clients.ForEach(client => client.Disconnect());
-                    while (count > 0)
-                    {
-                    }
+                    while (count > 0) Thread.Sleep(100);
+
                     Assert.AreEqual(0, count);
                     done();
                 });
