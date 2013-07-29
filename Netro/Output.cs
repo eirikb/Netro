@@ -113,14 +113,5 @@ namespace Netro
             Console.ResetColor();
             Console.CursorVisible = true;
         }
-
-        public void UpdateNumbers(Netro netro)
-        {
-            Console.ResetColor();
-            Console.SetCursorPosition(1, 8);
-            Console.Write("Active connections: " + netro.ActiveSockets);
-            Console.SetCursorPosition(1, 9);
-            Console.Write("Bytes transferred: " + netro.BytesTransferred);
-        }
     }
 }
