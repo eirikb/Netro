@@ -20,12 +20,12 @@ namespace NetroTest.Util
         public static void Write(this ReverseAsyncSocket socket, int id, string text)
         {
             var data = Encoding.UTF8.GetBytes(text);
-            socket.Write(id, data, 0, data.Length);
+            socket.Write(id, Command.Data, data, 0, data.Length);
         }
 
-        public static void Read(this ReverseAsyncSocket socket, Action<int, string> callback)
+        public static void ReadString(this ReverseAsyncSocket socket, Action<int, Command, string> callback)
         {
-            socket.Read((id, data, index, count) => callback(id, Encoding.UTF8.GetString(data, index, count)));
+            socket.Read((id, command, data) => callback(id, command, Encoding.UTF8.GetString(data)));
         }
     }
 }

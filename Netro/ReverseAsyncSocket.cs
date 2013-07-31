@@ -3,11 +3,19 @@ using System.Collections.Generic;
 
 namespace Netro
 {
+    public enum Command : byte
+    {
+        Connect = 1,
+        Data = 2,
+        Disconnect = 3
+    }
+
     public class ReverseAsyncSocket
     {
         private readonly List<Action<ReverseAsyncSocket>> _callbackConnect;
-        private readonly List<Action<int, byte[], int, int>> _callbackRead;
+        private readonly List<Action<int, Command, byte[]>> _callbackRead;
         private readonly AsyncSocket _socket;
+        private Command _command;
         private int _currentId;
         private bool _reading;
         private int _waitingFor;
@@ -15,7 +23,7 @@ namespace Netro
         public ReverseAsyncSocket()
         {
             _socket = new AsyncSocket();
-            _callbackRead = new List<Action<int, byte[], int, int>>();
+            _callbackRead = new List<Action<int, Command, byte[]>>();
             _callbackConnect = new List<Action<ReverseAsyncSocket>>();
         }
 
@@ -82,7 +90,8 @@ namespace Netro
             _socket.Disconnect();
         }
 
-        public void Read(Action<int, byte[], int, int> callback)
+
+        public void Read(Action<int, Command, byte[]> callback)
         {
             _callbackRead.Add(callback);
 
@@ -98,26 +107,31 @@ namespace Netro
                         {
                             _currentId = BitConverter.ToInt32(buffer, pos);
                             _waitingFor = BitConverter.ToInt32(buffer, pos + 4);
-                            pos += 8;
+                            _command = (Command) buffer[pos + 8];
+                            pos += 9;
                         }
 
-                        var next = read - pos;
-                        if (next > _waitingFor) next = _waitingFor;
+                        var count = read - pos;
+                        if (count > _waitingFor) count = _waitingFor;
 
-                        _callbackRead.ForEach(cb => cb(_currentId, buffer, pos, next));
+                        var data = new byte[count];
+                        Array.Copy(buffer, pos, data, 0, count);
 
-                        pos += next;
-                        _waitingFor -= next;
+                        _callbackRead.ForEach(cb => cb(_currentId, _command, data));
+
+                        pos += count;
+                        _waitingFor -= count;
                     }
                 });
         }
 
-        public void Write(int id, byte[] buffer, int index, int count)
+        public void Write(int id, Command command, byte[] buffer, int index, int count)
         {
-            var newBuffer = new byte[count + 8];
+            var newBuffer = new byte[count + 9];
             BitConverter.GetBytes(id).CopyTo(newBuffer, 0);
             BitConverter.GetBytes(count).CopyTo(newBuffer, 4);
-            Array.Copy(buffer, index, newBuffer, 8, count);
+            newBuffer[8] = (byte) command;
+            Array.Copy(buffer, index, newBuffer, 9, count);
             _socket.Write(newBuffer, 0, newBuffer.Length);
         }
     }

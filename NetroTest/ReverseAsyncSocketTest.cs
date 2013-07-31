@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Text;
 using NUnit.Framework;
 using Netro;
 using NetroTest.Util;
@@ -18,7 +18,7 @@ namespace NetroTest
 
                     var count = 2;
                     var client = new ReverseAsyncSocket();
-                    client.Read((id, text) => {});
+                    client.Read((id, command, text) => { });
                     client.Disconnect(() => done(--count == 0));
                     client.Connect(Host, port, () => client.Disconnect(() => done(--count == 0)));
                 });
@@ -30,8 +30,9 @@ namespace NetroTest
             Until((port, done) =>
                 {
                     var server = new ReverseAsyncSocket();
-                    server.Listen(port, socket => socket.Read((id, text) =>
+                    server.Listen(port, socket => socket.Read((id, command, data) =>
                         {
+                            var text = Encoding.UTF8.GetString(data);
                             Assert.AreEqual(7, id);
                             Assert.AreEqual("Hello", text);
                             done();
@@ -48,7 +49,7 @@ namespace NetroTest
             Until((port, done) =>
                 {
                     var server = new ReverseAsyncSocket();
-                    server.Listen(port, socket => socket.Read((id, text) =>
+                    server.Listen(port, socket => socket.ReadString((id, command, text) =>
                         {
                             Assert.GreaterOrEqual(id, 42);
                             Assert.LessOrEqual(id, 43);
@@ -59,7 +60,7 @@ namespace NetroTest
                         }));
 
                     var client = new ReverseAsyncSocket();
-                    client.Read((id, text) =>
+                    client.ReadString((id, command, text) =>
                         {
                             Assert.GreaterOrEqual(id, 43);
                             Assert.LessOrEqual(id, 44);
@@ -71,7 +72,7 @@ namespace NetroTest
 
                     client.Connect(Host, port, () =>
                         {
-                            client.Read((id, text) =>
+                            client.ReadString((id, command, text) =>
                                 {
                                     Assert.GreaterOrEqual(id, 43);
                                     Assert.LessOrEqual(id, 44);
@@ -95,7 +96,7 @@ namespace NetroTest
                     server.Listen(port, socket =>
                         {
                             socket.Disconnect(done);
-                            socket.Read((id, text) => {});
+                            socket.Read((id, command, text) => { });
                         });
 
                     var client = new ReverseAsyncSocket();

@@ -26,9 +26,9 @@ namespace Netro
             reverseServer.Connect(reverseSocket => server.Connect(socket =>
                 {
                     var tid = id++;
-                    reverseSocket.Read(
-                        (sid, buffer, index, count) => { if (sid == tid) socket.Write(buffer, index, count); });
-                    socket.Read((buffer, count) => reverseSocket.Write(tid, buffer, 0, count));
+                    reverseSocket.Read((sid, command, buffer) => { if (sid == tid) socket.Write(buffer); });
+                    socket.Read((buffer, count) =>
+                                reverseSocket.Write(tid, Command.Data, buffer, 0, count));
                 }));
         }
 
@@ -36,22 +36,22 @@ namespace Netro
         {
             var clients = new Dictionary<int, AsyncSocket>();
 
-            reverseClient.Read((id, buffer, index, count) =>
+            reverseClient.Read((id, command, buffer) =>
                 {
                     AsyncSocket client;
                     if (!clients.TryGetValue(id, out client))
                     {
                         client = new AsyncSocket();
-                        client.Read((cbuffer, ccount) => reverseClient.Write(id, cbuffer, 0, ccount));
+                        client.Read((cbuffer, ccount) => reverseClient.Write(id, Command.Data, cbuffer, 0, ccount));
                         client.Connect(host, port);
 
                         clients[id] = client;
 
-                        client.Connect(socket => client.Write(buffer, index, count));
+                        client.Connect(socket => client.Write(buffer));
                     }
                     else
                     {
-                        client.Write(buffer, index, count);
+                        client.Write(buffer);
                     }
                 });
         }

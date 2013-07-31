@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using Netro;
 using NetroTest.Util;
 
@@ -35,7 +36,7 @@ namespace NetroTest
 
                     reverseServer.Connect(socket =>
                         {
-                            socket.Read((id, text) =>
+                            socket.ReadString((id, command, text) =>
                                 {
                                     Assert.AreEqual("world!", text);
                                     done();
@@ -64,7 +65,7 @@ namespace NetroTest
 
                     netro.ReverseServerToServer(reverseServer, server);
 
-                    reverseClient.Read((tid, text) =>
+                    reverseClient.ReadString((tid, command, text) =>
                         {
                             Assert.AreEqual("Hello", text);
                             reverseClient.Write(tid, "world!");
@@ -76,7 +77,13 @@ namespace NetroTest
                         });
 
                     reverseClient.Connect(Host, port,
-                                          () => client.Connect(Host, serverPort, () => client.Write("Hello")));
+                                          () =>
+                                              {
+                                                  client.Connect(Host, serverPort, () =>
+                                                      {
+                                                          client.Write("Hello");
+                                                      });
+                                              });
                 });
         }
 
@@ -134,7 +141,7 @@ namespace NetroTest
 
                     client.Connect(Host, portServer, () =>
                         {
-                            client.Read(text => {});
+                            client.Read(text => { });
                             client.Disconnect(done);
                         });
                 });
