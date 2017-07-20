@@ -68,3 +68,7 @@ On reverse connections, open connection against localhost on port 80.
     ┌──┴──┐
     │     ├───O
     └─────┘
+
+## License
+
+MIT © Eirik Brandtzæg
